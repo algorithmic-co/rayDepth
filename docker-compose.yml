@@ -1,0 +1,40 @@
+# ---- docker-compose.yml ----
+version: '3'
+services:
+  ray-head:
+    build: .
+    image: ray-image:latest
+    container_name: ray-head
+    # Command to start Ray head node
+    command: >
+      bash -c "
+      ray start --head --num-cpus=8 --dashboard-host 0.0.0.0;
+      python /app/src/run_pipeline.py;
+      sleep infinity
+      "
+    # Resource constraints (adjust as needed)
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 32g
+    ports:
+      - "8265:8265"   # Ray dashboard
+
+  ray-worker:
+    build: .
+    image: ray-image:latest
+    container_name: ray-worker
+    command: >
+      bash -c "
+      ray start --address=ray-head:6379 --num-cpus=8;
+      sleep infinity
+      "
+
+    depends_on:
+      - ray-head
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 32g
